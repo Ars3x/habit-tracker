@@ -1,4 +1,4 @@
-/home/user1/habits_project/venv
+venv/
 __pycache__/
 *.pyc
 .env

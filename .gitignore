@@ -4,4 +4,3 @@ __pycache__/
 .env
 .DS_Store
 *.db
-/home/user1/habits_project/backend/test_db.py

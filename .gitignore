@@ -1,0 +1,6 @@
+/home/user1/habits_project/venv
+__pycache__/
+*.pyc
+.env
+.DS_Store
+*.db

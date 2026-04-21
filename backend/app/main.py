@@ -3,6 +3,10 @@ from sqlalchemy.orm import Session
 from . import models, database, auth
 from pydantic import BaseModel
 from datetime import timedelta
+from .schemas import HabitCreate, HabitResponse
+from .models import Habit, User
+from .auth import get_current_user
+from .database import get_db
 
 app = FastAPI(title='Habit Tracker API')
 
@@ -55,3 +59,21 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
         data={"sub":db_user.email}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
+
+@app.post("/habits", response_model=HabitResponse, status_code=201)
+def create_habit(
+    habit: HabitCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    new_habit = Habit(
+        user_id=current_user.id,
+        name=habit.name,
+        description=habit.description,
+        reminder_time=habit.reminder_time,
+        days_of_week=habit.days_of_week
+    )
+    db.add(new_habit)
+    db.commit()
+    db.refresh(new_habit)
+    return new_habit

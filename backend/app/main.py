@@ -77,3 +77,13 @@ def create_habit(
     db.commit()
     db.refresh(new_habit)
     return new_habit
+
+@app.get("/habits", response_model=list[HabitResponse])
+def get_habits(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    habits = db.query(Habit).filter(Habit.user_id == current_user.id).all()
+    return habits
+
+# eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTc3Njg3ODc5MH0.Zmbi-Al7lWB5nmNW4M4E3ol53hgmGaI5FoDweUczlFc

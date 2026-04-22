@@ -2,11 +2,12 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from . import models, database, auth
 from pydantic import BaseModel
-from datetime import timedelta
+from datetime import timedelta, date
 from .schemas import HabitCreate, HabitResponse
 from .models import Habit, User
 from .auth import get_current_user
 from .database import get_db
+from .models import HabitCompletion
 
 app = FastAPI(title='Habit Tracker API')
 
@@ -86,4 +87,46 @@ def get_habits(
     habits = db.query(Habit).filter(Habit.user_id == current_user.id).all()
     return habits
 
-# eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTc3Njg3ODc5MH0.Zmbi-Al7lWB5nmNW4M4E3ol53hgmGaI5FoDweUczlFc
+@app.post("/habits/{habit_id}/complete")
+def complete_habit(
+    habit_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    
+    habit = db.query(Habit).filter(Habit.id == habit_id, Habit.user_id == current_user.id).first()
+    if not habit:
+        raise HTTPException(status_code=404, detail="Habit not found")
+    
+    today = date.today()
+   
+    completion = db.query(HabitCompletion).filter(
+        HabitCompletion.habit_id == habit_id,
+        HabitCompletion.date == today
+    ).first()
+    
+    if completion and completion.completed:
+        return {"msg": "Habit already completed today"}
+    
+    
+    points = 5
+    
+    if not completion:
+        completion = HabitCompletion(habit_id=habit_id, date=today, completed=True, points_earned=points)
+        db.add(completion)
+    else:
+        completion.completed = True
+        completion.points_earned = points
+    
+    
+    current_user.total_points = (current_user.total_points or 0) + points
+    
+    new_level = current_user.total_points // 100 + 1
+    if new_level > current_user.level:
+        current_user.level = new_level
+        level_up_msg = f" Поздравляем! Вы достигли {new_level} уровня!"
+    else:
+        level_up_msg = ""
+    
+    db.commit()
+    return {"msg": f"Completed! +{points} points.{level_up_msg}"}

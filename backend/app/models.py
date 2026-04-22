@@ -10,6 +10,8 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    total_points = Column(Integer, default=0)
+    level = Column(Integer, default=1)
     
 class Habit(Base):
     __tablename__ = "habits"

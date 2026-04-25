@@ -10,15 +10,18 @@ if "token" not in st.session_state:
 if "user_email" not in st.session_state:
     st.session_state.user_email = None
     
-def api_requests(method, endpoint, data=None):
+def api_request(method, endpoint, data=None):
     headers = {}
     if st.session_state.token:
-        headers['Authorization'] = f'Bearer {st.session_state.token}'
+        headers["Authorization"] = f"Bearer {st.session_state.token}"
+        
     url = f"{API_URL}{endpoint}"
-    if method ==  'GET':
-        response = requests.get(url, headers)
-    elif method == 'POST':
+  
+    if method == "GET":
+        response = requests.get(url, headers=headers)
+    elif method == "POST":
         response = requests.post(url, json=data, headers=headers)
+
     return response
 
 st.title(f"Habit Tracker")
@@ -37,7 +40,7 @@ if not st.session_state.token:
             else:
                 st.error('Invalid credentials')
     with tab2:
-        email = st.text_input("Email", key="login_email")
+        email = st.text_input("Email", key="reg_email")
         password = st.text_input("Password", type="password", key="reg_password")
         if st.button("Register"):
             resp = requests.post(f"{API_URL}/auth/register", json={'email': email, 'password': password})
@@ -52,7 +55,7 @@ else:
         st.session_state.user_email = None
         st.rerun
         
-    habits_resp = api_requests("GET", "/habits")
+    habits_resp = api_request("GET", "/habits")
     if habits_resp.status_code == 200:
         habits = habits_resp.json()
         st.subheader('Your habits')
@@ -68,7 +71,7 @@ else:
                     st.caption(f"Reminder: {habit.get('reminder_time', 'not set')} | Days: {habit.get('days_of_week', 'daily')}")
                 with col2:
                     if st.button(f"✅ Complete", key=f"complete_{habit['id']}"):
-                        complete_resp = api_requests("POST", f"/habits/{habit['id']}/complete")
+                        complete_resp = api_request("POST", f"/habits/{habit['id']}/complete")
                         if complete_resp.status_code == 200:
                             st.success(complete_resp.json()["msg"])
                             st.rerun()
@@ -99,7 +102,7 @@ else:
                 "reminder_time": reminder_time.strftime("%H:%M:%S") if reminder_time else None,
                 "days_of_week": days_of_week if days_of_week else None
             }
-            resp = api_requests("POST", "/habits", data=data)
+            resp = api_request("POST", "/habits", data=data)
             if resp.status_code == 201:
                 st.success("Habit created!")
                 st.rerun()

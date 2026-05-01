@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 from datetime import date
 
-API_URL = "http://localhost:8000"
+API_URL = "http://127.0.0.1:8001"
 
 st.set_page_config(page_title="Habit Tracker", page_icon="icon.png")
 if "token" not in st.session_state:

@@ -93,40 +93,44 @@ def complete_habit(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    
     habit = db.query(Habit).filter(Habit.id == habit_id, Habit.user_id == current_user.id).first()
     if not habit:
         raise HTTPException(status_code=404, detail="Habit not found")
-    
+
     today = date.today()
-   
     completion = db.query(HabitCompletion).filter(
         HabitCompletion.habit_id == habit_id,
         HabitCompletion.date == today
     ).first()
-    
+
     if completion and completion.completed:
         return {"msg": "Habit already completed today"}
-    
-    
+
     points = 5
-    
     if not completion:
         completion = HabitCompletion(habit_id=habit_id, date=today, completed=True, points_earned=points)
         db.add(completion)
     else:
         completion.completed = True
         completion.points_earned = points
-    
-    
-    current_user.total_points = (current_user.total_points or 0) + points
-    
-    new_level = current_user.total_points // 100 + 1
-    if new_level > current_user.level:
-        current_user.level = new_level
+
+    user = db.query(User).filter(User.id == current_user.id).first()
+    user.total_points = (user.total_points or 0) + points
+
+    new_level = user.total_points // 100 + 1
+    level_up_msg = ""
+    if new_level > user.level:
+        user.level = new_level
         level_up_msg = f" Поздравляем! Вы достигли {new_level} уровня!"
-    else:
-        level_up_msg = ""
-    
+
     db.commit()
     return {"msg": f"Completed! +{points} points.{level_up_msg}"}
+
+@app.get("/user/me")
+def get_current_user_info(current_user = Depends(get_current_user)):
+    return {
+        "email": current_user.email,
+        "total_points": current_user.total_points,
+        "level": current_user.level
+    }
+    

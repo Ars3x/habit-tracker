@@ -53,7 +53,7 @@ else:
     if st.sidebar.button("Logout"):
         st.session_state.token = None
         st.session_state.user_email = None
-        st.rerun
+        st.rerun()
         
     habits_resp = api_request("GET", "/habits")
     if habits_resp.status_code == 200:
@@ -82,8 +82,14 @@ else:
         st.divider()
         
         st.subheader("Your progress")
-        st.metric("Points", "0")
-        st.metric("Level", "1")
+        profile_resp = api_request('GET', '/user/me')
+        if profile_resp.status_code == 200:
+            profile = profile_resp.json()
+            col_p1, col_p2 = st.columns(2)
+            with col_p1:
+                st.metric("Points", profile['total_points'])
+            with col_p2:
+                st.metric("Level", profile['level'])
     else:
         st.error("Could not load habits")
     

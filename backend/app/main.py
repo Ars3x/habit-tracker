@@ -1,15 +1,25 @@
 from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from . import models, database, auth
 from pydantic import BaseModel
 from datetime import timedelta, date
-from .schemas import HabitCreate, HabitResponse
+from .schemas import HabitCreate, HabitResponse, PushSubscriptionCreate
 from .models import Habit, User
 from .auth import get_current_user
 from .database import get_db
-from .models import HabitCompletion
+from .models import HabitCompletion, PushSubscription
+from . import scheduler
+
 
 app = FastAPI(title='Habit Tracker API')
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class UserCreate(BaseModel):
     email: str
@@ -134,3 +144,39 @@ def get_current_user_info(current_user = Depends(get_current_user)):
         "level": current_user.level
     }
     
+@app.post("/api/push-subscribe")
+def save_subscription(
+    subscription: PushSubscriptionCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    existing_sub = db.query(PushSubscription).filter(
+        PushSubscription.endpoint == subscription.endpoint
+    ).first()
+    if existing_sub:
+        return {"status": "already subscribed"}
+    
+    new_sub = PushSubscription(
+        user_id=current_user.id,
+        endpoint=subscription.endpoint,
+        keys=subscription.keys
+    )
+    db.add(new_sub)
+    db.commit()
+    return {"status": "subscribed"}
+
+@app.post("/api/push-unsubscribe")
+def remove_subscription(
+    subscription: PushSubscriptionCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    sub = db.query(PushSubscription).filter(
+        PushSubscription.endpoint == subscription.endpoint   # было subscription (без .endpoint)
+    ).first()
+    if sub:
+        db.delete(sub)
+        db.commit()
+        return {"status": "unsubscribed"}   # исправлена опечатка
+    return {"status": "not found"}
+

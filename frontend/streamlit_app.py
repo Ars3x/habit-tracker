@@ -1,8 +1,21 @@
+import json
+from pathlib import Path
+
 import streamlit as st
+import streamlit.config as st_config
 import requests
 from datetime import date
+from streamlit.url_util import make_url_path
 
 API_URL = "http://127.0.0.1:8001"
+_PUSH_INIT_PATH = Path(__file__).resolve().parent / "static" / "push_init.js"
+
+
+def _static_url(relative_path: str) -> str:
+    """Path under Streamlit app static (requires server.enableStaticServing)."""
+    base = (st_config.get_option("server.baseUrlPath") or "").strip()
+    return make_url_path(base, relative_path.lstrip("/"))
+
 
 st.set_page_config(page_title="Habit Tracker", page_icon="icon.png")
 if "token" not in st.session_state:
@@ -114,3 +127,32 @@ else:
                 st.rerun()
             else:
                 st.error("Failed to create habit")
+                
+    if st.button("🔔 Включить уведомления"):
+        token = st.session_state.token
+        if not token:
+            st.error("Сначала войдите")
+        else:
+            sw_js = _static_url("app/static/sw.js")
+            push_js_body = _PUSH_INIT_PATH.read_text(encoding="utf-8")
+            enable_html = f"""<div>
+<script>
+{push_js_body}
+</script>
+<script>
+setTimeout(function() {{
+    if (window.enableNotifications) {{
+        window.enableNotifications(
+            {json.dumps(token)},
+            {json.dumps(API_URL)},
+            {json.dumps(sw_js)}
+        );
+    }} else {{
+        console.error('enableNotifications не найдена – проверьте push_init.js');
+        alert('Не удалось загрузить скрипт уведомлений. Обновите страницу (Ctrl+F5) и попробуйте снова.');
+    }}
+}}, 800);
+</script>
+</div>"""
+            st.html(enable_html, unsafe_allow_javascript=True)
+            st.success("Запрос на уведомления отправлен. Разрешите в браузере, если появится окно.")

@@ -1,8 +1,7 @@
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, Time, ForeignKey, Date
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, Time, ForeignKey, Date, JSON
 from .database import Base
 import datetime
 from sqlalchemy.sql import func
-from .database import Base
 
 class User(Base):
     __tablename__ = "users"
@@ -31,4 +30,9 @@ class HabitCompletion(Base):
     completed = Column(Boolean, default=False)
     points_earned = Column(Integer, default=0)
     
-    
+class PushSubscription(Base):
+    __tablename__ = "push_subscriptions"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    endpoint = Column(String, unique=True, nullable=False)
+    keys = Column(JSON, nullable=False)

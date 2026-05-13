@@ -4,3 +4,8 @@ __pycache__/
 .env
 .DS_Store
 *.db
+vapid_public.pem
+vapid_private.pem
+send_test.py
+test_sw.html
+.streamlit

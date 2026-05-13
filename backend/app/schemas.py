@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from datetime import datetime, time
 from typing import Optional
+from typing import Dict
 
 class HabitCreate(BaseModel):
     name: str
@@ -18,3 +19,7 @@ class HabitResponse(BaseModel):
 
     class Config:
         from_attributes = True
+        
+class PushSubscriptionCreate(BaseModel):
+    endpoint: str
+    keys: Dict[str, str]

@@ -20,6 +20,7 @@ def send_reminders():
             models.Habit.reminder_time.isnot(None),
             models.Habit.reminder_time >= datetime.time(now.hour, now.minute, 0),
             models.Habit.reminder_time < datetime.time(now.hour, now.minute, 59, 999999),
+            models.Habit.notifications_enabled == True,
             or_(
                 models.Habit.days_of_week.is_(None),
                 models.Habit.days_of_week == "",

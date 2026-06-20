@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, Time, ForeignKey, Date, JSON
+from sqlalchemy.orm import relationship
 from .database import Base
 import datetime
 from sqlalchemy.sql import func
@@ -21,11 +22,13 @@ class Habit(Base):
     reminder_time = Column(Time, nullable=True)
     days_of_week = Column(String, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
+    notifications_enabled = Column(Boolean, default=True)
+    completions = relationship("HabitCompletion", backref="habit", cascade="all, delete-orphan")
     
 class HabitCompletion(Base):
     __tablename__ = "habit_completions"
     id = Column(Integer, primary_key=True, index=True)
-    habit_id = Column(Integer, ForeignKey("habits.id"), nullable=False)
+    habit_id = Column(Integer, ForeignKey("habits.id", ondelete="CASCADE"), nullable=False)
     date = Column(Date, nullable=False)
     completed = Column(Boolean, default=False)
     points_earned = Column(Integer, default=0)

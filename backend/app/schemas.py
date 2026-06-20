@@ -23,3 +23,10 @@ class HabitResponse(BaseModel):
 class PushSubscriptionCreate(BaseModel):
     endpoint: str
     keys: Dict[str, str]
+    
+class HabitUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    reminder_time: Optional[time] = None
+    days_of_week: Optional[str] = None
+    notifications_enabled: Optional[bool] = None

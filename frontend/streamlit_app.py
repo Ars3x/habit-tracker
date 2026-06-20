@@ -34,7 +34,12 @@ def api_request(method, endpoint, data=None):
         response = requests.get(url, headers=headers)
     elif method == "POST":
         response = requests.post(url, json=data, headers=headers)
-
+    elif method == "PUT":
+        response = requests.put(url, json=data, headers=headers)
+    elif method == "DELETE":
+        response = requests.delete(url, headers=headers)
+    else:
+        raise ValueError(f"Unsupported method: {method}")
     return response
 
 st.title(f"Habit Tracker")
@@ -76,7 +81,7 @@ else:
             st.info("No habits yet. Create one below.")
         else:
             for habit in habits:
-                col1, col2, col3 = st.columns([3, 1, 1])
+                col1, col2, col3, col4, col5 = st.columns([3, 1, 1, 1, 1])
                 with col1:
                     st.write(f"***{habit['name']}***")
                     if habit.get('description'):
@@ -91,6 +96,24 @@ else:
                         else:
                             st.error("Error completing habit")
                 with col3:
+                    current_state = habit.get('notifications_enabled', True)
+                    new_state = st.checkbox("🔔 Notify", value=current_state, key=f"notif_{habit['id']}")
+                    if new_state != current_state:
+                        update_resp = api_request("PUT", f"/habits/{habit['id']}", data={"notifications_enabled": new_state})
+                        if update_resp.status_code == 200:
+                            st.success("Настройки уведомлений обновлены")
+                            st.rerun()
+                        else:
+                            st.error("Не удалось обновить настройки")
+                with col4:
+                    if st.button("🗑️ Delete", key=f"del_{habit['id']}"):
+                        del_resp = api_request("DELETE", f"/habits/{habit['id']}")
+                        if del_resp.status_code == 204:
+                            st.success("Привычка удалена")
+                            st.rerun()
+                        else:
+                            st.error("Ошибка удаления")
+                with col5:
                     st.caption(f"ID: {habit['id']}")
         st.divider()
         

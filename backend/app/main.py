@@ -10,7 +10,7 @@ from .auth import get_current_user
 from .database import get_db
 from .models import HabitCompletion, PushSubscription
 from . import scheduler
-
+from .schemas import HabitUpdate
 
 app = FastAPI(title='Habit Tracker API')
 app.add_middleware(
@@ -180,3 +180,42 @@ def remove_subscription(
         return {"status": "unsubscribed"}   # исправлена опечатка
     return {"status": "not found"}
 
+@app.put("/habits/{habit_id}", response_model=HabitResponse)
+def update_habit(
+    habit_id: int,
+    habit_update: HabitUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    habit = db.query(Habit).filter(Habit.id == habit_id, Habit.user_id == current_user.id).first()
+    if not habit:
+        raise HTTPException(status_code=404, detail="Habit not found")
+    
+    if habit_update.name is not None:
+        habit.name = habit_update.name
+    if habit_update.description is not None:
+        habit.description = habit_update.description
+    if habit_update.reminder_time is not None:
+        habit.reminder_time = habit_update.reminder_time
+    if habit_update.days_of_week is not None:
+        habit.days_of_week = habit_update.days_of_week
+    if habit_update.notifications_enabled is not None:
+        habit.notifications_enabled = habit_update.notifications_enabled
+    
+    db.commit()
+    db.refresh(habit)
+    return habit
+
+@app.delete("/habits/{habit_id}", status_code=204)
+def delete_habit(
+    habit_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    habit = db.query(Habit).filter(Habit.id == habit_id, Habit.user_id == current_user.id).first()
+    if not habit:
+        raise HTTPException(status_code=404, detail="Habit not found")
+    
+    db.delete(habit)
+    db.commit()
+    return  # 204 No Content
